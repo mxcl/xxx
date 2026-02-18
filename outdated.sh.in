@@ -80,13 +80,14 @@ run_step() {
   command_name="$1"
   shift
 
+  if is_internal_command "${command_name}"; then
+    printf '# %s\n' "${title}" >&2
+    "${command_name}" "$@"
+    return
+  fi
+
   if [ -n "${GUM_BIN}" ]; then
-    if is_internal_command "${command_name}"; then
-      gum spin --title "${title}" -- "${OUTDATED_SELF}" --internal-run \
-        "${command_name}" "$@"
-    else
-      gum spin --title "${title}" -- "${command_name}" "$@"
-    fi
+    gum spin --title "${title}" -- "${command_name}" "$@"
   else
     printf '# %s\n' "${title}" >&2
     "${command_name}" "$@"
@@ -99,13 +100,14 @@ run_step_capture() {
   command_name="$1"
   shift
 
+  if is_internal_command "${command_name}"; then
+    printf '# %s\n' "${title}" >&2
+    "${command_name}" "$@"
+    return
+  fi
+
   if [ -n "${GUM_BIN}" ]; then
-    if is_internal_command "${command_name}"; then
-      gum spin --show-output --title "${title}" -- "${OUTDATED_SELF}" \
-        --internal-run "${command_name}" "$@"
-    else
-      gum spin --show-output --title "${title}" -- "${command_name}" "$@"
-    fi
+    gum spin --show-output --title "${title}" -- "${command_name}" "$@"
   else
     printf '# %s\n' "${title}" >&2
     "${command_name}" "$@"
