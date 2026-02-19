@@ -1,52 +1,36 @@
-# mxcl’s Bootstrap
+# xxx
 
-A package manager *manager* and other mad shit for science that just uses
-POSIX shell scripts and other tools.
+> SET US UP THE BOMB
+> LAUNCH ALL X
 
-* Python managed by `uv`
-  * `/usr/local/bin/python3.9`—`python3.13` are little shims that delegate
-    through to `uv`
-  * `python3`, `python`, `pip3`, `pip` symlinks to Python 3.12
-* Node from the vendor installed securely
-* Git from Xcode Command Line Tools (if installed, else brew)
-* Rust ecosystem managed with rustup
-* Crates run via `cargox`
-* Brew’d stuff run via `brewx`
-* Most simple binaries download straight from the vendor (Github releases)
-* Auto install shims for casks like `code` and `ollama`
-* Custom built `aws` that is minimal AF and installed securely
+Securely install and keep updated all the `x` tools.
 
-> [!TIP]
->
-> ## Ready for Agents
->
-> Let your agents use whatever they need.
->
-> Many things with bootstrap are stubs that zeroconf install things on demand.
-> Using vendor provided solutions where possible.
->
-> We install stubs for all common python versions and symlink `python` to 3.12
+* npx
+* uvx
+* cargox
+* brewx
+* pkgx
 
-> [!TIP]
->
-> ## Secure for Agents
->
-> Everything important is installed *as root*.
->
-> Agents are our friends. Probably. Still, let’s not give them more power
-> than they need. Installing important things as root means agents can’t
-> mess with them.
+Tools are installed from the *VENDOR* as root into `/usr/local`. It’s an
+agentic world. Let’s be safe y’all.
+
+> Go, Ruby? Yo yo yo. If someone would make a gox or gemx that actually worked
+> then we’d do it. Get at it yo.
 
 ## Installation
 
 ```sh
-curl -Ssf https://mxcl.dev/bootstrap/setup.sh |
+curl -Ssf https://mxcl.dev/xxx/setup.sh |
   sudo bash -exo pipefail &&
   outdated | sh
 ```
 
-The curl one-liner installs our stubs and the `outdated` script. Thus you
-then run `outdated | sh` to install everything else.
+We have deliberately split this out so all you security minded good boys can
+feel less terrible about running a script from the internet.
+
+1. `setup.sh` only installs our stubs and `outdated`. It does as little as possible.
+2. `outdated` only outputs commands that it *would do*
+3. So you then run it to install eg. node from the vendor etc.
 
 Or if you hate `curl | sh` stuff then clone this repo and run `./install.sh`.
 This route *does nothing*, it just outputs what it would do and tells you how
