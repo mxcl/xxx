@@ -1,6 +1,6 @@
 # xxx
 
-> SET US UP THE BOMB \
+> SOMEBODY SET US UP THE BOMB \
 > LAUNCH ALL X
 
 Securely install and keep updated all the `x` tools.
