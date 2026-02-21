@@ -111,6 +111,9 @@ if ! [ -e "${staged_bin}" ]; then
   exit 1
 fi
 
+# Upstream artifacts include 0600 files; normalize so non-root users can run.
+chmod -R u+rwX,go+rX "${package_dir}"
+
 $_SUDO install -d -m 755 /usr/local/bin /usr/local/lib/node_modules
 $_SUDO rm -f /usr/local/bin/openclaw
 $_SUDO rm -rf /usr/local/lib/node_modules/openclaw
