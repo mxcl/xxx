@@ -34,14 +34,8 @@ package_dir="${prefix}/lib/node_modules/openclaw"
 staged_bin="${prefix}/bin/openclaw"
 
 if ! "${npm_bin}" install -g --prefix "${prefix}" "${package_spec}"; then
-  echo "npm install failed, trying pkgx +node@22 npm fallback" >&2
-  rm -rf "${prefix}"
-  if command -v pkgx >/dev/null 2>&1; then
-    pkgx +node@22 npm install -g --prefix "${prefix}" "${package_spec}"
-  else
-    echo "pkgx not installed; run installables/pkgx.sh" >&2
-    exit 1
-  fi
+  echo "npm install failed via ${npm_bin}" >&2
+  exit 1
 fi
 
 if ! [ -d "${package_dir}" ]; then
