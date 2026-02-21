@@ -247,10 +247,7 @@ emit_plan() {
     return 0
   fi
 
-  printf '#!/bin/sh\n'
-  printf 'set -e\n'
-  printf '\n'
-  printf 'exec /usr/local/bin/outdated --apply%s\n' "${APPLY_ARGS}"
+  printf 'outdated --apply%s\n' "${APPLY_ARGS}"
 }
 
 begin_root_script() {
