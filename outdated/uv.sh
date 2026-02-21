@@ -6,14 +6,4 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "${script_path}")" && pwd)"
 
 . "${script_dir}/lib.sh"
 
-repo="astral-sh/uv"
-bin="/usr/local/bin/uv"
-
-latest="$(latest_tag "${repo}")"
-installed="$(installed_version "${bin}")"
-
-if [ -n "${installed}" ] && ! version_is_newer "${latest}" "${installed}"; then
-  exit 1
-fi
-
-printf '%s\n' "${latest}"
+check_outdated_with_yoink "astral-sh/uv" "/usr/local/bin/uv"

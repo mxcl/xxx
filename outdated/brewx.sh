@@ -6,14 +6,4 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "${script_path}")" && pwd)"
 
 . "${script_dir}/lib.sh"
 
-repo="mxcl/brewx"
-bin="/usr/local/bin/brewx"
-
-latest="$(latest_tag "${repo}")"
-installed="$(installed_version "${bin}")"
-
-if [ -n "${installed}" ] && ! version_is_newer "${latest}" "${installed}"; then
-  exit 1
-fi
-
-printf '%s\n' "${latest}"
+check_outdated_with_yoink "mxcl/brewx" "/usr/local/bin/brewx"

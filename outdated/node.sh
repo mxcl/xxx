@@ -25,11 +25,4 @@ if [ -z "${latest}" ] || [ "${latest}" = "null" ]; then
   echo "Unable to determine latest node version" >&2
   exit 2
 fi
-
-installed="$(installed_version "${bin}")"
-
-if [ -n "${installed}" ] && ! version_is_newer "${latest}" "${installed}"; then
-  exit 1
-fi
-
-printf '%s\n' "${latest}"
+emit_if_outdated "${latest}" "${bin}"

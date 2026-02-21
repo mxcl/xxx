@@ -6,19 +6,4 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "${script_path}")" && pwd)"
 
 . "${script_dir}/lib.sh"
 
-repo="mxcl/yoink"
-bin="/usr/local/bin/yoink"
-
-latest="$(latest_tag "${repo}")"
-
-if [ -z "${latest:-}" ] || [ "${latest}" = "null" ]; then
-  echo "Unable to determine latest release for ${repo}" >&2
-  exit 2
-fi
-installed="$(installed_version "${bin}")"
-
-if [ -n "${installed}" ] && ! version_is_newer "${latest}" "${installed}"; then
-  exit 1
-fi
-
-printf '%s\n' "${latest}"
+check_outdated_with_yoink "mxcl/yoink" "/usr/local/bin/yoink"

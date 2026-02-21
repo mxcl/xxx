@@ -77,3 +77,68 @@ installed_version() {
     "${bin}" --version 2>/dev/null | extract_version || true
   fi
 }
+
+emit_if_outdated() {
+  latest="$1"
+  bin="$2"
+  installed="$(installed_version "${bin}")"
+
+  if [ -n "${installed}" ] && ! version_is_newer "${latest}" "${installed}"; then
+    return 1
+  fi
+
+  printf '%s\n' "${latest}"
+}
+
+yoink_headers_json() {
+  repo="$1"
+  yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
+  if [ -x "${yoink_bin}" ]; then
+    "${yoink_bin}" -jI "${repo}"
+    return
+  fi
+
+  if command -v yoink >/dev/null 2>&1; then
+    yoink_bin="$(command -v yoink)"
+    "${yoink_bin}" -jI "${repo}"
+    return
+  fi
+
+  (
+    install_script="$(mktemp "${TMPDIR:-/tmp}/yoink.XXXXXX")"
+    trap 'rm -f "${install_script}"' EXIT INT TERM HUP
+    curl -fsSL https://yoink.sh -o "${install_script}"
+    sh "${install_script}" -jI "${repo}"
+  )
+}
+
+yoink_latest_tag() {
+  repo="$1"
+  tag="$(
+    yoink_headers_json "${repo}" |
+      /usr/bin/awk '
+        found == 0 &&
+        match($0, /"tag"[[:space:]]*:[[:space:]]*"[^"]+"/) {
+          value = substr($0, RSTART, RLENGTH)
+          sub(/^.*:[[:space:]]*"/, "", value)
+          sub(/"$/, "", value)
+          print value
+          found = 1
+        }'
+  )"
+
+  if [ -z "${tag}" ] || [ "${tag}" = "null" ]; then
+    echo "Unable to determine latest release for ${repo}" >&2
+    return 2
+  fi
+
+  printf '%s\n' "${tag}"
+}
+
+check_outdated_with_yoink() {
+  repo="$1"
+  bin="$2"
+  latest="$(yoink_latest_tag "${repo}")"
+  emit_if_outdated "${latest}" "${bin}"
+}
