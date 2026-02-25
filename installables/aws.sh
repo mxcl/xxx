@@ -19,49 +19,11 @@ mkdir -p "${stage_dir}"
 
 outdir="${stage_dir}/out"
 root_group="$(id -gn root)"
-build_script_url="https://raw.githubusercontent.com/mxcl/bootstrap/refs/heads/main/build-aws.ts"
-build_script="${stage_dir}/build-aws.ts"
-
-deno_bin="${DENO_BIN:-/usr/local/bin/deno}"
-if ! [ -x "${deno_bin}" ]; then
-  if command -v deno >/dev/null 2>&1; then
-    deno_bin="$(command -v deno)"
-  else
-    echo "deno not installed; run installables/deno.sh" >&2
-    exit 1
-  fi
-fi
-
-uv_bin="${UV_BIN:-/usr/local/bin/uv}"
-if ! [ -x "${uv_bin}" ]; then
-  if command -v uv >/dev/null 2>&1; then
-    uv_bin="$(command -v uv)"
-  else
-    echo "uv not installed; run installables/uv.sh" >&2
-    exit 1
-  fi
-fi
-PATH="$(dirname "${uv_bin}"):${PATH}"
-export PATH
+build_script="${stage_dir}/build-aws.sh"
+build_script_url="https://raw.githubusercontent.com/mxcl/bootstrap/refs/heads/main/build-aws.sh"
 
 curl -fsSL "${build_script_url}" -o "${build_script}"
-/usr/bin/awk '
-  /await Deno\.chmod\(linkPath, 0o755\);/ {
-    print "    try {"
-    print "      await Deno.chmod(linkPath, 0o755);"
-    print "    } catch (err) {"
-    print "      if (!(err instanceof Deno.errors.PermissionDenied)) {"
-    print "        throw err;"
-    print "      }"
-    print "    }"
-    next
-  }
-  { print }
-' "${build_script}" >"${build_script}.patched"
-mv "${build_script}.patched" "${build_script}"
-
-"${deno_bin}" run -A \
-  "${build_script}" \
+zsh "${build_script}" \
   "${aws_version}" \
   --out "${outdir}"
 
