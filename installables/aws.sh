@@ -19,6 +19,7 @@ stage_dir="${PWD}/aws.$$"
 mkdir -p "${stage_dir}"
 outdir="${stage_dir}/out"
 root_group="$(id -gn root)"
+mkdir -p "${outdir}"
 
 prefix="$(realpath "${outdir}")"
 share_dir="${prefix}/share/awscli"
