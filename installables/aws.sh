@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/zsh
 set -euo pipefail
 setopt null_glob
 

@@ -1,20 +1,6 @@
 #!/bin/sh
 set -eo pipefail
 
-os="$(uname -s)"
-arch="$(uname -m)"
-
-case "${os}:${arch}" in
-  Darwin:arm64) target="darwin-arm64" ;;
-  Darwin:x86_64) target="darwin-x64" ;;
-  Linux:aarch64|Linux:arm64) target="linux-arm64" ;;
-  Linux:x86_64) target="linux-x64" ;;
-*)
-  echo "Unsupported platform: ${os} ${arch}" >&2
-  exit 1
-  ;;
-esac
-
 node_version="${1:-}"
 if [ -z "${node_version}" ]; then
   node_version="$(
@@ -33,7 +19,7 @@ case "${node_version}" in
   *) version="v${node_version}" ;;
 esac
 
-asset="node-${version}-${target}.tar.gz"
+asset="node-${version}-darwin-arm64.tar.gz"
 url="https://nodejs.org/dist/${version}/${asset}"
 
 download_dir="${PWD}/node.$$"
