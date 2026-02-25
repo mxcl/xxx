@@ -41,7 +41,7 @@ emit_version_function() {
     {
       sub(/exit /, "return ")
       if ($0 == "") { print ""; next }
-      print "  " $0
+      print $0
     }
   ' "$file"
   printf '}\n'
@@ -76,7 +76,7 @@ emit_installable_function() {
     {
       sub(/exit /, "return ")
       if ($0 == "") { print ""; next }
-      print "  " $0
+      print $0
     }
   ' "$file"
   printf '}\n'
