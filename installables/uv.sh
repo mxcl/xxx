@@ -11,14 +11,10 @@ if ! [ -x "${yoink_bin}" ]; then
   fi
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/uv.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
+download_dir="${PWD}/uv.$$"
+mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${tmpdir}" astral-sh/uv)"
+paths="$("${yoink_bin}" -C "${download_dir}" astral-sh/uv)"
 if [ -z "${paths}" ]; then
   echo "Unable to download uv" >&2
   exit 1
@@ -40,16 +36,11 @@ for path in ${paths}; do
   $_SUDO install -m 755 "${path}" "/usr/local/bin/$(basename "${path}")"
 done
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  if [ -z "${staged_uv_bin}" ]; then
-    staged_uv_bin="${first_path}"
-  fi
-  if [ -n "${staged_uv_bin}" ] && [ -x "${staged_uv_bin}" ]; then
-    UV_BIN="${staged_uv_bin}"
-    export UV_BIN
-  fi
+if [ -z "${staged_uv_bin}" ]; then
+  staged_uv_bin="${first_path}"
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
+if [ -n "${staged_uv_bin}" ] && [ -x "${staged_uv_bin}" ]; then
+  UV_BIN="${staged_uv_bin}"
+  export UV_BIN
 fi

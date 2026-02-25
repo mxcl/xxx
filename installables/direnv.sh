@@ -11,15 +11,11 @@ if ! [ -x "${yoink_bin}" ]; then
   fi
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/direnv.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
+download_dir="${PWD}/direnv.$$"
+mkdir -p "${download_dir}"
 
 downloaded="$(
-  "${yoink_bin}" -C "${tmpdir}" direnv/direnv |
+  "${yoink_bin}" -C "${download_dir}" direnv/direnv |
     /usr/bin/head -n 1
 )"
 
@@ -28,13 +24,9 @@ if [ -z "${downloaded}" ] || ! [ -f "${downloaded}" ]; then
   exit 1
 fi
 
-tmpbin="${tmpdir}/direnv"
+tmpbin="${download_dir}/direnv"
 if [ "${downloaded}" != "${tmpbin}" ]; then
   mv "${downloaded}" "${tmpbin}"
 fi
 
 $_SUDO install -m 755 "${tmpbin}" /usr/local/bin/direnv
-
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
-fi

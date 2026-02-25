@@ -36,14 +36,11 @@ esac
 asset="node-${version}-${target}.tar.gz"
 url="https://nodejs.org/dist/${version}/${asset}"
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/node.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
+download_dir="${PWD}/node.$$"
+mkdir -p "${download_dir}"
 
-curl -fsSL "${url}" -o "${tmpdir}/${asset}"
+asset_path="${download_dir}/${asset}"
+curl -fsSL "${url}" -o "${asset_path}"
 
 # Avoid stale npm/corepack trees surviving tar extraction across upgrades.
 $_SUDO rm -rf /usr/local/lib/node_modules/npm
@@ -55,10 +52,6 @@ $_SUDO rm -f /usr/local/bin/npx
 $_SUDO rm -f /usr/local/bin/corepack
 
 $_SUDO tar -C /usr/local --strip-components=1 --no-same-owner \
-  -xzf "${tmpdir}/${asset}"
+  -xzf "${asset_path}"
 $_SUDO rm /usr/local/CHANGELOG.md /usr/local/README.md /usr/local/LICENSE
 $_SUDO rm -rf /usr/local/doc
-
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
-fi

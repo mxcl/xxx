@@ -478,7 +478,14 @@ $1"
     echo "panic: failed to create staging directory" >&2
     exit 1
   fi
-  trap 'rm -rf "${UPGRADE_STAGE_DIR}"' EXIT
+  APPLY_ORIGINAL_PWD="$(pwd)"
+  trap 'cd "${APPLY_ORIGINAL_PWD}" 2>/dev/null || true; rm -rf "${UPGRADE_STAGE_DIR}"' \
+    EXIT
+
+  if ! cd "${UPGRADE_STAGE_DIR}"; then
+    echo "panic: failed to enter staging directory: ${UPGRADE_STAGE_DIR}" >&2
+    exit 1
+  fi
 
   run_step "Staging in ${UPGRADE_STAGE_DIR}" true
   begin_root_script

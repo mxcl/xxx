@@ -11,14 +11,10 @@ if ! [ -x "${yoink_bin}" ]; then
   fi
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/caddy.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
+download_dir="${PWD}/caddy.$$"
+mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${tmpdir}" caddyserver/caddy)"
+paths="$("${yoink_bin}" -C "${download_dir}" caddyserver/caddy)"
 if [ -z "${paths}" ]; then
   echo "Unable to download caddy" >&2
   exit 1
@@ -31,7 +27,3 @@ for path in ${paths}; do
   fi
   $_SUDO install -m 755 "${path}" "/usr/local/bin/$(basename "${path}")"
 done
-
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
-fi

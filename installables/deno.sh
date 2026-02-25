@@ -11,15 +11,11 @@ if ! [ -x "${yoink_bin}" ]; then
   fi
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/deno.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
+download_dir="${PWD}/deno.$$"
+mkdir -p "${download_dir}"
 
 downloaded="$(
-  "${yoink_bin}" -C "${tmpdir}" denoland/deno |
+  "${yoink_bin}" -C "${download_dir}" denoland/deno |
     /usr/bin/head -n 1
 )"
 
@@ -28,18 +24,12 @@ if [ -z "${downloaded}" ] || ! [ -f "${downloaded}" ]; then
   exit 1
 fi
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  staged_bin_dir="${UPGRADE_STAGE_DIR}/bin"
-  mkdir -p "${staged_bin_dir}"
-  staged_deno="${staged_bin_dir}/deno"
-  cp "${downloaded}" "${staged_deno}"
-  chmod 755 "${staged_deno}"
-  DENO_BIN="${staged_deno}"
-  export DENO_BIN
-fi
+staged_bin_dir="${PWD}/bin"
+mkdir -p "${staged_bin_dir}"
+staged_deno="${staged_bin_dir}/deno"
+cp "${downloaded}" "${staged_deno}"
+chmod 755 "${staged_deno}"
+DENO_BIN="${staged_deno}"
+export DENO_BIN
 
 $_SUDO install -m 755 "${downloaded}" /usr/local/bin/deno
-
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
-fi

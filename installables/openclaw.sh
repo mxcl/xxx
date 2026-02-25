@@ -22,14 +22,8 @@ esac
 
 package_spec="openclaw@${openclaw_version}"
 
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  tmpdir="$(mktemp -d "${UPGRADE_STAGE_DIR}/openclaw.XXXXXX")"
-else
-  tmpdir="$(mktemp -d)"
-  trap 'rm -rf "${tmpdir}"' EXIT
-fi
-
-prefix="${tmpdir}/prefix"
+prefix="${PWD}/openclaw.$$/prefix"
+mkdir -p "${prefix}"
 package_dir="${prefix}/lib/node_modules/openclaw"
 staged_bin="${prefix}/bin/openclaw"
 
@@ -56,7 +50,3 @@ $_SUDO rm -rf /usr/local/lib/node_modules/openclaw
 $_SUDO install -d -m 755 /usr/local/bin /usr/local/lib/node_modules
 $_SUDO cp -RP "${package_dir}" /usr/local/lib/node_modules/openclaw
 $_SUDO cp -RP "${staged_bin}" /usr/local/bin/openclaw
-
-if [ -n "${UPGRADE_STAGE_DIR:-}" ]; then
-  $_SUDO rm -rf "${tmpdir}"
-fi
