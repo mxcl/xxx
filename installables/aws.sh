@@ -32,7 +32,10 @@ archive_path="${work_dir}/aws-cli-${aws_version}.tar.gz"
 cleanup() {
   rm -rf "${work_dir}" "${stage_dir}"
 }
-trap cleanup EXIT
+
+if [ "${OUTDATED_BOOTSTRAP_ONLY:-0}" -ne 1 ]; then
+  trap cleanup EXIT
+fi
 
 curl -fsSL \
   -A 'pkgx/manifests' \
