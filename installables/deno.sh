@@ -1,13 +1,13 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/deno.$$"
 mkdir -p "${download_dir}"
 
 downloaded="$(
-  "${yoink_bin}" -C "${download_dir}" denoland/deno |
+  /usr/local/bin/yoink -C "${download_dir}" denoland/deno |
     /usr/bin/head -n 1
 )"
 

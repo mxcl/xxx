@@ -1,13 +1,13 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/direnv.$$"
 mkdir -p "${download_dir}"
 
 downloaded="$(
-  "${yoink_bin}" -C "${download_dir}" direnv/direnv |
+  /usr/local/bin/yoink -C "${download_dir}" direnv/direnv |
     /usr/bin/head -n 1
 )"
 

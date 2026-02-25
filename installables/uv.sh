@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/uv.$$"
 mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${download_dir}" astral-sh/uv)"
+paths="$(/usr/local/bin/yoink -C "${download_dir}" astral-sh/uv)"
 if [ -z "${paths}" ]; then
   echo "Unable to download uv" >&2
   exit 1

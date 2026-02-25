@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/gh.$$"
 mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${download_dir}" cli/cli)"
+paths="$(/usr/local/bin/yoink -C "${download_dir}" cli/cli)"
 if [ -z "${paths}" ]; then
   echo "Unable to download gh" >&2
   exit 1

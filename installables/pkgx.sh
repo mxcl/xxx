@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/pkgx.$$"
 mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${download_dir}" pkgxdev/pkgx)"
+paths="$(/usr/local/bin/yoink -C "${download_dir}" pkgxdev/pkgx)"
 if [ -z "${paths}" ]; then
   echo "Unable to download pkgx" >&2
   exit 1

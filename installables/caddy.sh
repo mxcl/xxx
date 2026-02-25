@@ -1,12 +1,12 @@
 #!/bin/sh
 set -eo pipefail
 
-yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
+
 
 download_dir="${PWD}/caddy.$$"
 mkdir -p "${download_dir}"
 
-paths="$("${yoink_bin}" -C "${download_dir}" caddyserver/caddy)"
+paths="$(/usr/local/bin/yoink -C "${download_dir}" caddyserver/caddy)"
 if [ -z "${paths}" ]; then
   echo "Unable to download caddy" >&2
   exit 1
