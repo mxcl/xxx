@@ -2,14 +2,6 @@
 set -eo pipefail
 
 yoink_bin="${YOINK_BIN:-/usr/local/bin/yoink}"
-if ! [ -x "${yoink_bin}" ]; then
-  if command -v yoink >/dev/null 2>&1; then
-    yoink_bin="$(command -v yoink)"
-  else
-    echo "yoink not installed; run installables/yoink.sh" >&2
-    exit 1
-  fi
-fi
 
 download_dir="${PWD}/brewx.$$"
 mkdir -p "${download_dir}"
