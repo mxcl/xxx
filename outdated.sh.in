@@ -345,7 +345,7 @@ uv_python_upgrade_available() {
     return 1
   fi
 
-  if ! command -v /usr/bin/jq >/dev/null 2>&1; then
+  if ! command -v /usr/local/bin/jq >/dev/null 2>&1; then
     return 0
   fi
 
@@ -359,7 +359,7 @@ uv_python_upgrade_available() {
 
   minors="$(
     printf '%s' "${installed_json}" |
-      /usr/bin/jq -r '
+      /usr/local/bin/jq -r '
         .[] |
         select(.implementation == "cpython") |
         select(.path != null and (.path | contains("/.local/share/uv/python/"))) |
@@ -375,7 +375,7 @@ uv_python_upgrade_available() {
   for minor in ${minors}; do
     installed_versions="$(
       printf '%s' "${installed_json}" |
-        /usr/bin/jq -r --arg minor "${minor}" '
+        /usr/local/bin/jq -r --arg minor "${minor}" '
           .[] |
           select(.implementation == "cpython") |
           select(.path != null and (.path | contains("/.local/share/uv/python/"))) |
@@ -401,7 +401,7 @@ uv_python_upgrade_available() {
 
     available_versions="$(
       printf '%s' "${available_json}" |
-        /usr/bin/jq -r --arg minor "${minor}" '
+        /usr/local/bin/jq -r --arg minor "${minor}" '
           .[] |
           select(.implementation == "cpython") |
           select(

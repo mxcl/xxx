@@ -19,7 +19,7 @@ node_version="${1:-}"
 if [ -z "${node_version}" ]; then
   node_version="$(
     curl -fsSL https://nodejs.org/dist/index.json |
-      /usr/bin/jq -r '.[0].version'
+      /usr/local/bin/jq -r '.[0].version'
   )"
 fi
 

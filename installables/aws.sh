@@ -5,7 +5,7 @@ aws_version="${1:-}"
 if [ -z "${aws_version}" ]; then
   aws_version="$(
     curl -fsSL https://formulae.brew.sh/api/formula/awscli.json |
-      /usr/bin/jq -r '.versions.stable'
+      /usr/local/bin/jq -r '.versions.stable'
   )"
 fi
 
