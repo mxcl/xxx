@@ -1,38 +1,7 @@
 #!/bin/sh
 set -eo pipefail
 
-
-
-download_dir="${PWD}/uv.$$"
-mkdir -p "${download_dir}"
-
-paths="$(/usr/local/bin/yoink -C "${download_dir}" astral-sh/uv)"
-if [ -z "${paths}" ]; then
-  echo "Unable to download uv" >&2
-  exit 1
-fi
-
-first_path=""
-staged_uv_bin=""
-for path in ${paths}; do
-  if [ -z "${path}" ] || ! [ -f "${path}" ]; then
-    echo "uv binary not found after download" >&2
-    exit 1
-  fi
-  if [ -z "${first_path}" ]; then
-    first_path="${path}"
-  fi
-  if [ "$(basename "${path}")" = "uv" ]; then
-    staged_uv_bin="${path}"
-  fi
+for path in $(/usr/local/bin/yoink astral-sh/uv)
+do
   $_SUDO install -m 755 "${path}" "/usr/local/bin/$(basename "${path}")"
 done
-
-if [ -z "${staged_uv_bin}" ]; then
-  staged_uv_bin="${first_path}"
-fi
-
-if [ -n "${staged_uv_bin}" ] && [ -x "${staged_uv_bin}" ]; then
-  UV_BIN="${staged_uv_bin}"
-  export UV_BIN
-fi
