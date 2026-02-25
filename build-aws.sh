@@ -2,66 +2,14 @@
 set -euo pipefail
 setopt null_glob
 
-usage() {
-  cat <<'USAGE'
-Build the AWS CLI from source.
+version="${AWS_VERSION:-$({
+  curl -fsSL https://formulae.brew.sh/api/formula/awscli.json |
+    jq -r '.versions.stable'
+} 2>/dev/null || true)}"
+out_dir="${OUT_DIR:-out}"
 
-Usage:
-  build-aws.sh <version> [--out <dir>]
-
-Examples:
-  build-aws.sh 2.15.24
-  build-aws.sh 2.15.24 --out ./out
-USAGE
-}
-
-version=""
-out_dir="out"
-
-while (( $# > 0 )); do
-  case "$1" in
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    --out|--prefix)
-      if (( $# < 2 )); then
-        echo "missing value for $1" >&2
-        echo >&2
-        usage >&2
-        exit 1
-      fi
-      out_dir="$2"
-      shift 2
-      ;;
-    --out=*|--prefix=*)
-      out_dir="${1#*=}"
-      shift
-      ;;
-    -*)
-      echo "unknown option: $1" >&2
-      echo >&2
-      usage >&2
-      exit 1
-      ;;
-    *)
-      if [[ -z "$version" ]]; then
-        version="$1"
-        shift
-      else
-        echo "unexpected argument: $1" >&2
-        echo >&2
-        usage >&2
-        exit 1
-      fi
-      ;;
-  esac
-done
-
-if [[ -z "$version" ]]; then
-  echo "missing <version>" >&2
-  echo >&2
-  usage >&2
+if [[ -z "$version" || "$version" == "null" ]]; then
+  echo "Unable to determine latest awscli version" >&2
   exit 1
 fi
 
@@ -78,14 +26,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "+ downloading: https://github.com/aws/aws-cli/archive/${version}.tar.gz" >&2
 curl -fsSL \
   -A 'pkgx/manifests' \
   "https://github.com/aws/aws-cli/archive/${version}.tar.gz" \
   -o "$archive_path"
 
 mkdir -p "$src_dir"
-echo "+ extracting: $archive_path" >&2
 tar -xzf "$archive_path" --strip-components=1 -C "$src_dir"
 
 rm -rf "$prefix"
@@ -98,7 +44,6 @@ if [[ -z "$python_bin" ]]; then
 fi
 python_bin="$(realpath "$python_bin")"
 
-echo "+ creating venv: $share_dir" >&2
 "$python_bin" -m venv "$share_dir"
 
 venv_bin="$share_dir/bin"
@@ -121,7 +66,6 @@ for lib_source in "${lib_sources[@]}"; do
   ln "$lib_source" "$share_dir/lib/$lib_name"
 done
 
-echo "+ installing into venv" >&2
 (
   cd "$src_dir"
   "$share_dir/bin/pip" install --no-cache-dir .
@@ -179,5 +123,3 @@ if [[ -d "$share_dir/bin" ]]; then
     \( -name 'activate' -o -name 'activate.*' -o -name 'pip*' -o -name 'easy_install*' \) \
     -exec rm -f {} +
 fi
-
-echo "+ done: $prefix" >&2

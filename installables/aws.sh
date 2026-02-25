@@ -23,9 +23,10 @@ build_script="${stage_dir}/build-aws.sh"
 build_script_url="https://raw.githubusercontent.com/mxcl/bootstrap/refs/heads/main/build-aws.sh"
 
 curl -fsSL "${build_script_url}" -o "${build_script}"
-zsh "${build_script}" \
-  "${aws_version}" \
-  --out "${outdir}"
+(
+  cd "${stage_dir}"
+  AWS_VERSION="${aws_version}" zsh "${build_script}"
+)
 
 # prune junk
 rm -rf "${outdir}/share/awscli/bin/aws"*
