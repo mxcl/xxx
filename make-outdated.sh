@@ -4,23 +4,6 @@ set -eo pipefail
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-list_outdated_checks() {
-  if [ -f "${script_dir}/outdated/yoink.sh" ]; then
-    printf '%s\n' "${script_dir}/outdated/yoink.sh"
-  fi
-  for x in "${script_dir}"/outdated/*.sh; do
-    if ! [ -e "${x}" ]; then
-      continue
-    fi
-    case "$(basename "${x}")" in
-    lib.sh|yoink.sh)
-      continue
-      ;;
-    esac
-    printf '%s\n' "${x}"
-  done
-}
-
 list_installables() {
   if [ -f "${script_dir}/installables/yoink.sh" ]; then
     printf '%s\n' "${script_dir}/installables/yoink.sh"
@@ -44,17 +27,7 @@ list_installables() {
   done
 }
 
-emit_without_shell_header() {
-  local file="$1"
-
-  /usr/bin/awk '
-    NR == 1 && /^#!/ { next }
-    /^set -euo pipefail$/ { next }
-    { print }
-  ' "$file"
-}
-
-emit_outdated_function() {
+emit_version_function() {
   local name="$1"
   local file="$2"
 
@@ -131,14 +104,6 @@ emit_installable_target_matcher() {
 cat "${script_dir}/outdated.sh.in"
 printf '\n'
 
-emit_without_shell_header "${script_dir}/outdated/lib.sh"
-
-while IFS= read -r outdated; do
-  base="$(basename "${outdated}")"
-  name="${base%.*}"
-  emit_outdated_function "outdated_${name}" "${outdated}"
-done < <(list_outdated_checks)
-
 while IFS= read -r installable; do
   name="$(basename "${installable%.*}")"
   emit_installable_function "install_${name}" "${installable}"
@@ -146,16 +111,43 @@ done < <(list_installables)
 
 emit_installable_target_matcher
 
+while IFS= read -r installable; do
+  name="$(basename "${installable%.*}")"
+  emit_version_function "current_version_${name}" \
+    "${script_dir}/current-version/${name}.sh"
+  emit_version_function "latest_version_${name}" \
+    "${script_dir}/latest-version/${name}.sh"
+
+  printf '\noutdated_%s() {\n' "${name}"
+  if [ "${name}" = "yoink" ]; then
+    printf '  if ! [ -x /usr/local/bin/yoink ]; then\n'
+    printf '    printf '\''%%s\\n'\'' "latest"\n'
+    printf '    return 0\n'
+    printf '  fi\n'
+  fi
+  printf '  latest="$(latest_version_%s)" || return 1\n' "${name}"
+  printf '  current="$(current_version_%s || true)"\n' "${name}"
+  printf '  if [ -z "${current}" ]; then\n'
+  printf '    printf '\''%%s\\n'\'' "${latest}"\n'
+  printf '    return 0\n'
+  printf '  fi\n'
+  printf '  if cargox semverator lt "${current}" "${latest}" >/dev/null 2>&1; then\n'
+  printf '    printf '\''%%s\\n'\'' "${latest}"\n'
+  printf '    return 0\n'
+  printf '  fi\n'
+  printf '  return 1\n'
+  printf '}\n'
+done < <(list_installables)
+
 printf '\nif [ "${OUTDATED_BOOTSTRAP_ONLY:-0}" -ne 1 ]; then\n'
 
-while IFS= read -r outdated; do
-  base="$(basename "${outdated}")"
-  name="${base%.*}"
+while IFS= read -r installable; do
+  name="$(basename "${installable%.*}")"
   printf '\nif version="$(run_step_capture "Checking %s" outdated_%s)"; then\n' \
     "${name}" "${name}"
   printf '  queue_install "%s" "${version}"\n' "${name}"
   printf 'fi\n'
-done < <(list_outdated_checks)
+done < <(list_installables)
 
 printf '\n  emit_plan\n'
 printf 'fi\n'

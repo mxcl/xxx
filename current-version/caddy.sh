@@ -1,13 +1,11 @@
 #!/bin/sh
 set -euo pipefail
 
-bin="/usr/local/bin/caddy"
-"${bin}" --version 2>/dev/null |
+/usr/local/bin/caddy --version 2>/dev/null |
   /usr/bin/awk '
-    match($0, /v?[0-9]+([.][0-9]+)*/) {
-      value = substr($0, RSTART, RLENGTH)
-      sub(/^[^0-9]*/, "", value)
-      sub(/[^0-9.].*$/, "", value)
+    match($0, /^v[0-9]+([.][0-9]+)+([[:space:]]|$)/) {
+      value = substr($0, RSTART + 1, RLENGTH - 1)
+      sub(/[[:space:]].*$/, "", value)
       print value
       exit
     }
