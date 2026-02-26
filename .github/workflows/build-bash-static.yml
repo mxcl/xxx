@@ -1,0 +1,136 @@
+name: Build GNU Bash Static Tarball
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-bash-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect latest Bash version
+        id: check
+        run: |
+          set -euo pipefail
+
+          if git ls-remote --exit-code --heads origin pkgs >/dev/null 2>&1; then
+            git fetch origin pkgs
+            git worktree add pkgs-worktree -B pkgs origin/pkgs
+          else
+            git worktree add --detach pkgs-worktree
+            (
+              cd pkgs-worktree
+              git checkout --orphan pkgs
+              git rm -rf . >/dev/null 2>&1 || true
+            )
+          fi
+
+          latest_version="$({
+            curl -fsSL https://ftp.gnu.org/gnu/bash/
+          } | grep -Eo 'bash-[0-9]+\.[0-9]+(\.[0-9]+)?\.tar\.gz' \
+            | sed -E \
+              's/^bash-([0-9]+\.[0-9]+(\.[0-9]+)?)\.tar\.gz$/\1/' \
+            | sort -Vu \
+            | tail -n 1)"
+
+          if [ -z "$latest_version" ]; then
+            echo "Could not determine latest GNU Bash version" >&2
+            exit 1
+          fi
+
+          current_version=""
+          if [ -f pkgs-worktree/bash/latest-version.txt ]; then
+            current_version="$(tr -d '[:space:]' < \
+              pkgs-worktree/bash/latest-version.txt)"
+          fi
+
+          {
+            echo "latest_version=$latest_version"
+            source_url="https://ftp.gnu.org/gnu/bash/"
+            source_url="${source_url}bash-$latest_version.tar.gz"
+            echo "source_url=$source_url"
+            if [ "$latest_version" = "$current_version" ]; then
+              echo "should_build=false"
+            else
+              echo "should_build=true"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install build dependencies
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Build static Bash tarball
+        id: build
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+
+          version="${{ steps.check.outputs.latest_version }}"
+          source_url="${{ steps.check.outputs.source_url }}"
+
+          mkdir -p build/src build/pkg/bin
+
+          cd build/src
+          curl -fsSLO "$source_url"
+          tar -xzf "bash-$version.tar.gz"
+
+          cd "bash-$version"
+          CC=musl-gcc ./configure --without-bash-malloc
+          make -j"$(nproc)" bash
+          strip bash
+
+          file bash | grep -q 'statically linked'
+
+          install -m 0755 bash ../../pkg/bin/bash
+
+          cd ../../pkg
+          tarball="bash-$version-linux-x86_64-static.tar.gz"
+          tar -czf "../$tarball" bin/bash
+
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+
+      - name: Publish tarball to pkgs branch
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          set -euo pipefail
+
+          version="${{ steps.check.outputs.latest_version }}"
+          tarball="${{ steps.build.outputs.tarball }}"
+
+          cd pkgs-worktree
+          mkdir -p bash
+
+          find bash -maxdepth 1 -type f \
+            -name 'bash-*-linux-x86_64-static.tar.gz' -delete
+
+          cp "../build/$tarball" bash/
+          printf '%s\n' "$version" > bash/latest-version.txt
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add bash
+          if git diff --cached --quiet; then
+            echo "No package changes to publish"
+            exit 0
+          fi
+
+          git commit -s -m "bash: add $version static build"
+          git push origin HEAD:pkgs
+
+      - name: Report no update
+        if: steps.check.outputs.should_build != 'true'
+        run: |
+          echo "No new GNU Bash release detected"
