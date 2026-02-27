@@ -1,4 +1,4 @@
-name: Build GNU Bash Static Tarball
+name: Build GNU Bash macOS aarch64 Tarball
 
 on:
   schedule:
@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build-bash-static:
-    runs-on: ubuntu-latest
+  build-bash-macos-aarch64:
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,10 +46,12 @@ jobs:
             exit 1
           fi
 
+          pkg_dir="bash/macos-aarch64"
+          version_file="pkgs-worktree/$pkg_dir/latest-version.txt"
+
           current_version=""
-          if [ -f pkgs-worktree/bash/latest-version.txt ]; then
-            current_version="$(tr -d '[:space:]' < \
-              pkgs-worktree/bash/latest-version.txt)"
+          if [ -f "$version_file" ]; then
+            current_version="$(tr -d '[:space:]' < "$version_file")"
           fi
 
           {
@@ -57,6 +59,7 @@ jobs:
             source_url="https://ftp.gnu.org/gnu/bash/"
             source_url="${source_url}bash-$latest_version.tar.gz"
             echo "source_url=$source_url"
+            echo "pkg_dir=$pkg_dir"
             if [ "$latest_version" = "$current_version" ]; then
               echo "should_build=false"
             else
@@ -64,13 +67,7 @@ jobs:
             fi
           } >> "$GITHUB_OUTPUT"
 
-      - name: Install build dependencies
-        if: steps.check.outputs.should_build == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - name: Build static Bash tarball
+      - name: Build macOS aarch64 Bash tarball
         id: build
         if: steps.check.outputs.should_build == 'true'
         run: |
@@ -79,6 +76,11 @@ jobs:
           version="${{ steps.check.outputs.latest_version }}"
           source_url="${{ steps.check.outputs.source_url }}"
 
+          export MACOSX_DEPLOYMENT_TARGET="15.0"
+          export CC="clang -std=c89 -Wno-return-type"
+          export CFLAGS="-Os -target arm64-apple-macos15"
+          export CPPFLAGS="$CFLAGS"
+
           mkdir -p build/src build/pkg/bin
 
           cd build/src
@@ -86,17 +88,37 @@ jobs:
           tar -xzf "bash-$version.tar.gz"
 
           cd "bash-$version"
-          CC=musl-gcc ./configure --without-bash-malloc
-          make -j"$(nproc)" bash
-          strip bash
+          ./configure \
+            --without-bash-malloc \
+            --with-included-gettext \
+            --host=aarch64-apple-darwin
+          make -j"$(sysctl -n hw.ncpu)" bash
+          strip -x bash
 
-          file bash | grep -q 'statically linked'
+          file bash | grep -q 'Mach-O 64-bit executable arm64'
+
+          deps="$(otool -L bash | tail -n +2 | awk '{print $1}')"
+          non_system_deps="$(echo "$deps" \
+            | grep -Ev '^(/usr/lib/|/System/Library/)' || true)"
+
+          if [ -n "$non_system_deps" ]; then
+            echo "Unexpected non-system dylibs:" >&2
+            echo "$non_system_deps" >&2
+            exit 1
+          fi
 
           install -m 0755 bash ../../pkg/bin/bash
 
+          cat > ../../pkg/BUILD-INFO.txt <<INFO
+          bash_version=$version
+          target=macos-aarch64
+          macos_deployment_target=$MACOSX_DEPLOYMENT_TARGET
+          built_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          INFO
+
           cd ../../pkg
-          tarball="bash-$version-linux-x86_64-static.tar.gz"
-          tar -czf "../$tarball" bin/bash
+          tarball="bash-$version-macos-aarch64.tar.gz"
+          tar -czf "../$tarball" bin/bash BUILD-INFO.txt
 
           echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
 
@@ -107,30 +129,31 @@ jobs:
 
           version="${{ steps.check.outputs.latest_version }}"
           tarball="${{ steps.build.outputs.tarball }}"
+          pkg_dir="${{ steps.check.outputs.pkg_dir }}"
 
           cd pkgs-worktree
-          mkdir -p bash
+          mkdir -p "$pkg_dir"
 
-          find bash -maxdepth 1 -type f \
-            -name 'bash-*-linux-x86_64-static.tar.gz' -delete
+          find "$pkg_dir" -maxdepth 1 -type f \
+            -name 'bash-*-macos-aarch64.tar.gz' -delete
 
-          cp "../build/$tarball" bash/
-          printf '%s\n' "$version" > bash/latest-version.txt
+          cp "../build/$tarball" "$pkg_dir/"
+          printf '%s\n' "$version" > "$pkg_dir/latest-version.txt"
 
           git config user.name "github-actions[bot]"
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add bash
+          git add "$pkg_dir"
           if git diff --cached --quiet; then
             echo "No package changes to publish"
             exit 0
           fi
 
-          git commit -s -m "bash: add $version static build"
+          git commit -s -m "bash: add $version macos aarch64 build"
           git push origin HEAD:pkgs
 
       - name: Report no update
         if: steps.check.outputs.should_build != 'true'
         run: |
-          echo "No new GNU Bash release detected"
+          echo "No new GNU Bash release detected for macOS aarch64"
