@@ -51,6 +51,17 @@ is_known_install_target() {
   return 1
 }
 
+is_complex_install_target() {
+  case "$1" in
+    aws|clawhub|node|openclaw)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 run_internal() {
   target="${1:-}"
   if [ -z "${target}" ]; then
@@ -126,27 +137,97 @@ run_step_capture() {
   fi
 }
 
-shell_quote() {
-  escaped="$(printf '%s' "$1" | /usr/bin/sed "s/'/'\\\\''/g")"
-  printf "'%s'" "${escaped}"
+queue_apply_arg() {
+  APPLY_ARGS="${APPLY_ARGS} $1"
+  PLAN_HAS_ACTION=1
 }
 
-queue_arg() {
-  quoted="$(shell_quote "$1")"
-  APPLY_ARGS="${APPLY_ARGS} ${quoted}"
+queue_command() {
+  command="$1"
+  if [ -z "${command}" ]; then
+    return 0
+  fi
+
+  if [ -z "${PLAN_COMMANDS}" ]; then
+    PLAN_COMMANDS="${command}"
+  else
+    PLAN_COMMANDS="${PLAN_COMMANDS}
+${command}"
+  fi
   PLAN_HAS_ACTION=1
 }
 
 queue_brew_upgrade() {
-  queue_arg "--brew"
+  queue_command "brew upgrade"
 }
 
 queue_uv_python_upgrade() {
-  queue_arg "--uv-python"
+  queue_command "uv python upgrade"
 }
 
 queue_rustup_upgrade() {
-  queue_arg "--rustup"
+  queue_command "rustup update"
+}
+
+simple_install_repo_for_target() {
+  case "$1" in
+    brewx)
+      printf '%s\n' "mxcl/brewx"
+      ;;
+    caddy)
+      printf '%s\n' "caddyserver/caddy"
+      ;;
+    cargox)
+      printf '%s\n' "pkgxdev/cargox"
+      ;;
+    deno)
+      printf '%s\n' "denoland/deno"
+      ;;
+    direnv)
+      printf '%s\n' "direnv/direnv"
+      ;;
+    gh)
+      printf '%s\n' "cli/cli"
+      ;;
+    pkgx)
+      printf '%s\n' "pkgxdev/pkgx"
+      ;;
+    uv)
+      printf '%s\n' "astral-sh/uv"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+queue_simple_install_command() {
+  name="$1"
+  version="$2"
+
+  if [ "${name}" = "yoink" ]; then
+    yoink_spec="mxcl/yoink"
+    if [ "${version}" != "latest" ]; then
+      yoink_spec="${yoink_spec}@${version}"
+    fi
+    queue_command "curl -fsSL https://yoink.sh | sh -s -- ${yoink_spec}"
+    queue_command "sudo install -m 755 -D ./yoink /usr/local/bin/yoink"
+    return 0
+  fi
+
+  repo="$(simple_install_repo_for_target "${name}" || true)"
+  if [ -z "${repo}" ]; then
+    return 1
+  fi
+
+  install_spec="${repo}"
+  if [ "${version}" != "latest" ]; then
+    install_spec="${install_spec}@${version}"
+  fi
+
+  queue_command \
+    "yoink ${install_spec} | xargs sudo install -m 755 -D /usr/local/bin"
+  return 0
 }
 
 queue_install() {
@@ -156,8 +237,18 @@ queue_install() {
     return 0
   fi
 
-  queue_arg "--install"
-  queue_arg "${name}=${version}"
+  if is_complex_install_target "${name}"; then
+    queue_apply_arg "--install"
+    queue_apply_arg "${name}=${version}"
+    return 0
+  fi
+
+  if queue_simple_install_command "${name}" "${version}"; then
+    return 0
+  fi
+
+  queue_apply_arg "--install"
+  queue_apply_arg "${name}=${version}"
 }
 
 append_install_spec() {
@@ -259,7 +350,13 @@ emit_plan() {
     return 0
   fi
 
-  printf 'outdated --apply%s\n' "${APPLY_ARGS}"
+  if [ -n "${PLAN_COMMANDS}" ]; then
+    printf '%s\n' "${PLAN_COMMANDS}"
+  fi
+
+  if [ -n "${APPLY_ARGS}" ]; then
+    printf '/usr/local/bin/outdated --apply%s\n' "${APPLY_ARGS}"
+  fi
 }
 
 begin_root_script() {
@@ -542,6 +639,11 @@ $1"
         exit 1
       fi
 
+      if ! is_complex_install_target "${name}"; then
+        echo "panic: apply only supports complex install target: ${name}" >&2
+        exit 1
+      fi
+
       install_func="install_${name}"
       run_step "Updating ${name}" "${install_func}" "${version}"
     done <<EOF
@@ -554,6 +656,7 @@ EOF
 
 run_outdated() {
   APPLY_ARGS=""
+  PLAN_COMMANDS=""
   PLAN_HAS_ACTION=0
 
   if [ "${OUTDATED_BOOTSTRAP_ONLY:-0}" -ne 1 ]; then
