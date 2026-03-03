@@ -2,17 +2,18 @@
 set -eo pipefail
 
 latest_version() {
-  gh release view \
+  v=$(gh release view \
     --repo nodejs/node \
     --json tagName \
-    --jq '.tagName | sub("^[^0-9]*"; "") | sub("[^0-9.].*$"; "")'
+    --jq .tagName)
+  echo "${v#v}"
 }
 
-version="${1:-$(latest_version)}"
+v="${1:-$(latest_version)}"
 
 cd "$(mktemp -d)"
 
-curl -fsSL "https://nodejs.org/dist/${version}/node-${version}-darwin-arm64.tar.gz" -o node.tgz
+curl -fsSL "https://nodejs.org/dist/${v}/node-${v}-darwin-arm64.tar.gz" -o node.tgz
 
 # Avoid stale npm/corepack trees surviving tar extraction across upgrades.
 $_SUDO rm -rf /usr/local/lib/node_modules/npm
