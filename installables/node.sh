@@ -1,15 +1,12 @@
 #!/bin/sh
 set -eo pipefail
 
-latest_version() {
-  v=$(gh release view \
-    --repo nodejs/node \
-    --json tagName \
-    --jq .tagName)
-  echo "${v#v}"
-}
+v="${1:-$(gh release view --repo nodejs/node --json tagName --jq .tagName)}"
 
-v="${1:-$(latest_version)}"
+case $v in
+  v*) ;;
+  *) v="v$v" ;;
+esac
 
 cd "$(mktemp -d)"
 
