@@ -9,9 +9,7 @@ cd "$(mktemp -d)"
 chmod -R u+rwX,go+rX ./lib/node_modules/clawhub
 
 $_SUDO rm -f /usr/local/bin/clawhub
-$_SUDO rm -f /usr/local/bin/clawdhub
 $_SUDO rm -rf /usr/local/lib/node_modules/clawhub
 $_SUDO install -d -m 755 /usr/local/bin /usr/local/lib/node_modules
 $_SUDO cp -RP ./lib/node_modules/clawhub /usr/local/lib/node_modules/clawhub
 $_SUDO cp -RP ./bin/clawhub /usr/local/bin/clawhub
-$_SUDO cp -RP ./bin/clawdhub /usr/local/bin/clawdhub
