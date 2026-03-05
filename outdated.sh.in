@@ -208,7 +208,7 @@ queue_simple_install_command() {
   fi
 
   queue_command \
-    "yoink ${install_spec} | xargs -I{} sudo install -m 755 {} /usr/local/bin/{}"
+    "yoink ${install_spec} | xargs -I{} sudo mv {} /usr/local/bin"
   return 0
 }
 
