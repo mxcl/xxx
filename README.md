@@ -47,7 +47,13 @@ Check for outdated installs and upgrade only what needs it by running:
 $ outdated
 ```
 
-- `outdated` has no side effects; it prints an apply script to stdout.
+- `outdated` has no side effects; it prints an apply script to stdout:
+  ```sh
+  $ outdated
+  brew upgrade
+  rustup update
+  yoink astral-sh/uv@0.10.9 | xargs -I{} sudo mv {} /usr/local/bin
+  ```
 - Apply immediately with:
   ```sh
   outdated | sh
